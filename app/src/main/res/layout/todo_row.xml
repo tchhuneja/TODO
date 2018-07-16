@@ -8,7 +8,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/titletv"
-        android:textStyle="bold"/>
+        android:textStyle="bold"
+        android:textSize="20sp"/>
 
     <TextView
         android:layout_width="match_parent"

@@ -9,12 +9,13 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TodoAdapter extends ArrayAdapter{
-    private ArrayList<TodoItem> items;
+    private List<TodoItem> items;
     private LayoutInflater inflater;
 
-     TodoAdapter(@NonNull Context context, @NonNull ArrayList<TodoItem> objects) {
+     TodoAdapter(@NonNull Context context, @NonNull List<TodoItem> objects) {
         super(context,0, objects);
         inflater=(LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         this.items=objects;
@@ -34,13 +35,19 @@ public class TodoAdapter extends ArrayAdapter{
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
          View output=convertView;
-         if (output==null)
-             output=inflater.inflate(R.layout.todo_row,parent,false);
-         TextView TITLE=output.findViewById(R.id.titletv);
-         TextView DESCRIPTION=output.findViewById(R.id.descriptiontv);
+         if (output==null) {
+             output = inflater.inflate(R.layout.todo_row, parent, false);
+             TextView TITLE=output.findViewById(R.id.titletv);
+             TextView DESCRIPTION=output.findViewById(R.id.descriptiontv);
+             TodoHolder holder=new TodoHolder();
+             holder.Title=TITLE;
+             holder.Desc=DESCRIPTION;
+             output.setTag(holder);
+         }
+         TodoHolder holder=(TodoHolder) output.getTag();
          TodoItem todoItem=items.get(position);
-         TITLE.setText(todoItem.getTitle());
-         DESCRIPTION.setText(todoItem.getDescription());
+         holder.Title.setText(todoItem.getTitle());
+         holder.Desc.setText(todoItem.getDescription());
          return output;
     }
 }
