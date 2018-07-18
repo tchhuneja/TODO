@@ -22,4 +22,16 @@ public interface TodoDAO {
 
     @Query("select * from TodoItem")
     List<TodoItem> getTodos();
+
+    @Query("select max(id) from TodoItem")
+    int gethighestid();
+
+    @Query("select * from TodoItem where id=:newid")
+    TodoItem gettodoitem(int newid);
+//
+//    @Query("select title from TodoItem where id=:newid")
+//    String gettilte(int newid);
+//
+//    @Query("select description from TodoItem where id=:new_id")
+//    String getdescription(int new_id);
 }

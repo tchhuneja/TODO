@@ -1,9 +1,14 @@
 package com.example.tc.todolist;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.arch.persistence.room.Room;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
@@ -16,12 +21,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.TimePicker;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Timer;
 
@@ -30,10 +38,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     List<TodoItem> todos=new ArrayList<>();
     TodoAdapter adapter;
     TodoDAO todoDAO;
-
     String newtitle,newdescription;
 
     public static final int EDIT_REQUEST_CODE=1;
+
+    int month,day,year,hour,min;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +73,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         listView.setAdapter(adapter);
         listView.setOnItemLongClickListener(this);
         listView.setOnItemClickListener(this);
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                refreshList();
+            }
+        };
+
+        IntentFilter intentFilter =  new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
+
+        registerReceiver(receiver,intentFilter);
+
+
     }
 
     @Override
@@ -99,7 +121,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        adddialog();
+        if (item.getItemId()==R.id.add)
+            adddialog();
+
+        else
+            startActivity(new Intent(this,Settings.class));
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -111,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         builder.setCancelable(false);
 
         LinearLayout linearLayout =new LinearLayout(this);
-        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams layoutParams=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,0);
         linearLayout.setLayoutParams(layoutParams);
 
@@ -123,16 +150,87 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         descriptionbox.setHint("Description");
         linearLayout.addView(descriptionbox);
 
+        final EditText datebox=new EditText(this);
+        datebox.setHint("Select Date");
+        linearLayout.addView(datebox);
+
+        final EditText timebox=new EditText(this);
+        timebox.setHint("Set time");
+        linearLayout.addView(timebox);
+
         builder.setView(linearLayout);
+
+        datebox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Calendar calendar = Calendar.getInstance();
+                year = calendar.get(Calendar.YEAR);
+                month = calendar.get(Calendar.MONTH);
+                day = calendar.get(Calendar.DAY_OF_MONTH);
+
+                DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this, new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+
+                        int tempMonth = month+1;
+                        // dateExpense = dayOfMonth + "/" + tempMonth + "/" + year;
+                        datebox.setText(dayOfMonth + "/" + tempMonth + "/" + year);
+
+                        MainActivity.this.day = dayOfMonth;
+                        MainActivity.this.month  = month;
+                        MainActivity.this.year  = year;
+
+                    }
+                },year,month,day);
+
+                datePickerDialog.show();
+            }
+        });
+
+        timebox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Calendar calendar = Calendar.getInstance();
+                hour = calendar.get(Calendar.HOUR_OF_DAY);
+                min = calendar.get(Calendar.MINUTE);
+
+                TimePickerDialog timePickerDialog = new TimePickerDialog(MainActivity.this, new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+
+                        timebox.setText(hourOfDay + ":" + minute);
+
+                        MainActivity.this.hour = hourOfDay;
+                        MainActivity.this.min = minute;
+
+                    }
+                },hour,min,false);
+
+                timePickerDialog.show();
+            }
+        });
 
         builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 newtitle=titlebox.getText().toString();
                 newdescription=descriptionbox.getText().toString();
+
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(year,month,day,hour,min);
+
                 TodoItem todoItem=new TodoItem(newtitle,newdescription);
+                todoItem.setTimeInEpochs(calendar.getTimeInMillis());
 
                 todoDAO.addTodo(todoItem);
+
+                int id=todoDAO.gethighestid();
+
+                TodoItem item=todoDAO.gettodoitem(id);
+                todos.add(item);
+                adapter.notifyDataSetChanged();
 //                TODOOpenHelper todoOpenHelper=new TODOOpenHelper(MainActivity.this);
 //                SQLiteDatabase database=todoOpenHelper.getWritableDatabase();
 //
@@ -141,13 +239,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 //                contentValues.put(Contract.TODOS.COLUMN_DESCRIPTION,newdescription);
 //
 //                long id=database.insert(Contract.TODOS.TODO_TABLE_NAME,null,contentValues);
-
-                todos.add(todoItem);
-                adapter.notifyDataSetChanged();
             }
         });
 
-        AlertDialog dialog=builder.create();
+        builder.setNegativeButton("Return", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
         dialog.show();
 
     }
@@ -196,6 +298,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         DESCRIPTION.setText(item.getDescription());
         linearLayout.addView(DESCRIPTION);
 
+        final TextView date=new TextView(this);
+        date.setText(item.getDate());
+        linearLayout.addView(date);
+
+        final TextView time=new TextView(this);
+        time.setText(item.getTime());
+        linearLayout.addView(time);
+
         builder.setView(linearLayout);
 
         AlertDialog dialog=builder.create();
@@ -222,6 +332,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         }
     }
+
 //
 //    @Override
 //    protected void onPause() {
@@ -259,5 +370,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 //        super.onRestart();
 //    }
 
+    public void refreshList(){
+        int id=todoDAO.gethighestid();
+        TodoItem todoItem= todoDAO.gettodoitem(id);
+        todos.add(todoItem);
+
+//        todos.clear();
+//        todos.addAll(todoDAO.getTodos());
+
+        adapter.notifyDataSetChanged();
+    }
 
 }
