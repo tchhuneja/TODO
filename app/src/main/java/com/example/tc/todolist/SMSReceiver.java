@@ -9,6 +9,7 @@ import android.telephony.SmsMessage;
 import android.widget.Toast;
 
 import java.util.Calendar;
+import java.util.Locale;
 
 
 //we created this class to add todos via sms in background also
@@ -40,24 +41,27 @@ public class SMSReceiver extends BroadcastReceiver {
                 todo_title=smsMessage.getDisplayOriginatingAddress();
 
 //                long timestampMillis=smsMessage.getTimestampMillis()*1000L;
-
-                Calendar calendar=Calendar.getInstance();
-                calendar.setTimeInMillis(System.currentTimeMillis());
-                int year = calendar.get(Calendar.YEAR);
-                int month = calendar.get(Calendar.MONTH);
-                int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-                ++month;
-
-                this.date = day + "/" + month + "/" + year;
-
-                int hour = calendar.get(Calendar.HOUR);
-                int min = calendar.get(Calendar.MINUTE);
-
-                this.time = hour + ":" + min;
             }
 
             TodoItem todoItem=new TodoItem(todo_title,todo_desc);
+//            Calendar calendar=Calendar.getInstance();
+//            calendar.setTimeInMillis(System.currentTimeMillis());
+//            int year = calendar.get(Calendar.YEAR);
+//            int month = calendar.get(Calendar.MONTH);
+//            int day = calendar.get(Calendar.DAY_OF_MONTH);
+//
+//            ++month;
+//
+//            date = day + "/" + month + "/" + year;
+//
+//            int hour = calendar.get(Calendar.HOUR);
+//            int min = calendar.get(Calendar.MINUTE);
+//
+//            time = toString().valueOf(hour) + ":" + toString().valueOf(min);
+
+            todoItem.setTimeInEpochs(System.currentTimeMillis());
+            //todoItem.setDate(date);
+           // todoItem.setTime(time);
 
             todoDAO.addTodo(todoItem);
 
